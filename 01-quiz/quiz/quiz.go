@@ -22,7 +22,6 @@ type Quiz struct {
 	questionsAsked   int
 	questionsCorrect int
 	timeout          int
-	randomize        bool
 }
 
 func (q *Quiz) addQuestion(id int, question, answer string) {
@@ -65,6 +64,16 @@ func (q *Quiz) loadQuizFromFile(filename string) error {
 	}
 }
 
+func (q *Quiz) randomizeQuestions() {
+	rand.Seed(time.Now().UTC().UnixNano())
+	tmp := make([]int, len(q.order))
+	perm := rand.Perm(len(q.order))
+	for i, v := range perm {
+		tmp[v] = q.order[i]
+	}
+	q.order = tmp
+}
+
 func (q *Quiz) verifyAnswer(id int, answer string) bool {
 	if strings.EqualFold(
 		strings.TrimSpace(q.answers[q.order[id]]),
@@ -85,21 +94,12 @@ func NewQuiz(arguments args.Args) (Quiz, error) {
 		0,
 		0,
 		arguments.Timeout,
-		arguments.Randomize,
 	}
 	err := q.loadQuizFromFile(arguments.Filename)
-	return q, err
-}
-
-// RandomizeQuestions randomizes questions.
-func (q *Quiz) RandomizeQuestions() {
-	tmp := make([]int, len(q.order))
-	rand.Seed(time.Now().UTC().UnixNano())
-	perm := rand.Perm(len(q.order))
-	for i, v := range perm {
-		tmp[v] = q.order[i]
+	if arguments.Randomize {
+		q.randomizeQuestions()
 	}
-	q.order = tmp
+	return q, err
 }
 
 // RunQuiz runs the quiz with the loaded questions.
